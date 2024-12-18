@@ -28,5 +28,5 @@ jobs:
           git commit -m "Updated README with commit details"
           git push origin main
         env:
-          USERNAME: ${{ secrets.USERNAME }}
-          TOKEN: ${{ secrets.TOKEN }}
+          USERNAME: ${{secrets.USERNAME}}
+          TOKEN: ${{secrets.TOKEN_GH}}
