@@ -3,7 +3,9 @@ name: Log GitHub Activity
 # Run this every day at midnight UTC
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 15 * * *"
+push:
+  branches: -""
 
 jobs:
   log-commits:
@@ -23,8 +25,8 @@ jobs:
 
       - name: Run log_commits script
         env:
-          GITHUB_USERNAME: ${{ secrets.USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          USERNAME: ${{ secrets.USERNAME }}
+          TOKEN: ${{ secrets.TOKEN }}
         run: python log_commits.py
 
       - name: Commit logs if changes found
