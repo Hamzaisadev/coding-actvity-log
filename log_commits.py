@@ -26,7 +26,7 @@ def fetch_repositories():
 
 # Fetch commits for each repository
 def fetch_commits(repo_name):
-    commits_url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{repo_name}/commits?per_page=5"
+    commits_url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{repo_name}/commits?per_page=100"  # Increased to 100
     response = requests.get(commits_url, auth=(GITHUB_USERNAME, GITHUB_TOKEN))
     if response.status_code == 200:
         return response.json()
@@ -68,12 +68,17 @@ def generate_log():
                 languages_used = ", ".join([language["name"] for language in repo["languages"]])  # Add languages later
                 log_entries.append(f"- {commit_message} by {commit_author} on {commit_date}. Languages: {languages_used}")
             log_entries.append("")  # Add empty line between repositories
+        else:
+            print(f"No commits found for {repo_name}.")
 
     # Write logs to the file
-    with open(LOG_FILE, "w") as log_file:
-        log_file.write("\n".join(log_entries))
-        log_file.write(f"\n### Total Coding Time: {total_time}\n")
-        print(f"Logs written to {LOG_FILE}")
+    try:
+        with open(LOG_FILE, "w") as log_file:
+            log_file.write("\n".join(log_entries))
+            log_file.write(f"\n### Total Coding Time: {total_time}\n")
+            print(f"Logs written to {LOG_FILE}")
+    except Exception as e:
+        print(f"Error writing to log file: {e}")
 
 # Run the script
 if __name__ == "__main__":
