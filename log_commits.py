@@ -4,7 +4,7 @@ import os
 
 # GitHub username and token
 GITHUB_USERNAME = os.getenv("USERNAME")
-GITHUB_TOKEN = os.getenv("TOKEN")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 # WakaTime API endpoint for fetching stats
 WAKATIME_API_URL = "https://wakatime.com/api/v1/users/current/stats"
