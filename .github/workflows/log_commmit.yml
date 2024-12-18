@@ -29,4 +29,4 @@ jobs:
           git push origin main
         env:
           USERNAME: ${{secrets.USERNAME}}
-          TOKEN: ${{secrets.TOKEN_GH}}
+          TOKEN: ${{secrets.GH_TOKEN}}
