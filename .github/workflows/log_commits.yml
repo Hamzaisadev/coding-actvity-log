@@ -32,5 +32,4 @@ jobs:
           git commit -m "Updated README with commit details"
           git push origin main
         env:
-          USERNAME: ${{secrets.USERNAME}}
-          TOKEN: ${{secrets.GH_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
