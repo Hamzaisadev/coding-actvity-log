@@ -1,97 +1,123 @@
-import requests
-from datetime import datetime
 import os
+import requests
+import base64
 
-# Environment variables
-GITHUB_USERNAME = ("hamzisdev")
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-WAKATIME_API_KEY = os.getenv("WAKATIME_API_KEY")
+# Load environment variables (replace with your token if not using secrets)
+GITHUB_TOKEN = os.getenv("GH_TOKEN")  # GitHub Personal Access Token
+LOG_REPO = "your-username/activity-log"  # Replace with your central repo name (username/repo)
+LOG_BRANCH = "main"  # Branch of the log repo to update
+LOG_FILE = "README.md"  # The file to update in the log repo
 
-# API URLs
-WAKATIME_API_URL = "https://wakatime.com/api/v1/users/current/stats/last_7_days"
-GITHUB_API_URL = f"https://api.github.com/users/{GITHUB_USERNAME}/repos?type=public&per_page=100"
+# GitHub API endpoint and headers
+BASE_URL = "https://api.github.com"
+HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
 
-print("USERNAME:", os.getenv("USERNAME"))
-print("GITHUB_TOKEN:", os.getenv("GITHUB_TOKEN"))
-print("WAKATIME_API_KEY:", os.getenv("WAKATIME_API_KEY"))
 
-# Log file
-LOG_FILE = "activity_log.md"
-
-# Fetch repositories
-def fetch_repositories():
-    response = requests.get(GITHUB_API_URL, auth=(GITHUB_USERNAME, GITHUB_TOKEN))
+def get_repos():
+    """Fetch all repositories for the authenticated user."""
+    url = f"{BASE_URL}/user/repos"
+    response = requests.get(url, headers=HEADERS)
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"Error fetching repositories: {response.status_code} - {response.text}")
+        print(f"Error fetching repositories: {response.status_code}")
+        print(response.json())
         return []
 
-# Fetch commits
-def fetch_commits(repo_name):
-    commits_url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{repo_name}/commits?per_page=100"
-    response = requests.get(commits_url, auth=(GITHUB_USERNAME, GITHUB_TOKEN))
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Error fetching commits for {repo_name}: {response.status_code} - {response.text}")
-        return []
 
-# Fetch repository languages
-def fetch_languages(repo):
-    languages_url = repo["languages_url"]
-    response = requests.get(languages_url, auth=(GITHUB_USERNAME, GITHUB_TOKEN))
+def get_latest_commit(repo_name, branch="main"):
+    """Fetch the latest commit for a given repository and branch."""
+    url = f"{BASE_URL}/repos/{repo_name}/commits?sha={branch}&per_page=1"
+    response = requests.get(url, headers=HEADERS)
     if response.status_code == 200:
-        return ", ".join(response.json().keys())
-    else:
-        print(f"Error fetching languages for {repo['name']}: {response.status_code} - {response.text}")
-        return "Unknown"
-
-# Fetch WakaTime stats
-def fetch_wakatime_stats():
-    response = requests.get(WAKATIME_API_URL, headers={"Authorization": f"Bearer {WAKATIME_API_KEY}"})
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Error fetching WakaTime stats: {response.status_code} - {response.text}")
-        return {}
-
-# Generate log
-def generate_log():
-    repositories = fetch_repositories()
-    log_entries = []
-    today = datetime.now().strftime("%Y-%m-%d")
-    
-    # Fetch WakaTime stats
-    wakatime_stats = fetch_wakatime_stats()
-    total_time = wakatime_stats.get("data", {}).get("grand_total", {}).get("text", "0 hours")
-    
-    # Process each repository
-    for repo in repositories:
-        repo_name = repo["name"]
-        languages_used = fetch_languages(repo)
-        commits = fetch_commits(repo_name)
-        
+        commits = response.json()
         if commits:
-            log_entries.append(f"## {repo_name} ({today})")
-            for commit in commits:
-                commit_message = commit["commit"]["message"]
-                commit_author = commit["commit"]["author"]["name"]
-                commit_date = commit["commit"]["author"]["date"]
-                log_entries.append(f"- {commit_message} by {commit_author} on {commit_date}. Languages: {languages_used}")
-            log_entries.append("")  # Add empty line between repositories
-        else:
-            print(f"No commits found for {repo_name}.")
+            return commits[0]  # Return the latest commit
+    else:
+        print(f"Error fetching commits for {repo_name}: {response.status_code}")
+        print(response.json())
+    return None
 
-    # Write logs to the file
-    try:
-        with open(LOG_FILE, "a") as log_file:
-            log_file.write("\n".join(log_entries))
-            log_file.write(f"\n### Total Coding Time: {total_time}\n")
-            print(f"Logs written to {LOG_FILE}")
-    except Exception as e:
-        print(f"Error writing to log file: {e}")
 
-# Run the script
+def get_readme_content():
+    """Fetch the current content of the README.md file in the log repo."""
+    url = f"{BASE_URL}/repos/{LOG_REPO}/contents/{LOG_FILE}"
+    response = requests.get(url, headers=HEADERS)
+    if response.status_code == 200:
+        content = response.json()
+        decoded_content = base64.b64decode(content["content"]).decode("utf-8")
+        return decoded_content, content["sha"]  # Return the content and its SHA
+    elif response.status_code == 404:
+        print("README.md not found. A new one will be created.")
+        return "", None
+    else:
+        print(f"Error fetching README.md: {response.status_code}")
+        print(response.json())
+        return None, None
+
+
+def update_readme(new_log_entry):
+    """Update the README.md file with the new log entry."""
+    current_content, sha = get_readme_content()
+    if current_content is None:
+        return
+
+    updated_content = current_content + "\n" + new_log_entry
+    encoded_content = base64.b64encode(updated_content.encode("utf-8")).decode("utf-8")
+
+    url = f"{BASE_URL}/repos/{LOG_REPO}/contents/{LOG_FILE}"
+    payload = {
+        "message": "Updated Activity Log with new commit details",
+        "content": encoded_content,
+        "branch": LOG_BRANCH,
+    }
+    if sha:
+        payload["sha"] = sha  # Include the SHA if the file already exists
+
+    response = requests.put(url, headers=HEADERS, json=payload)
+    if response.status_code == 200:
+        print("README.md updated successfully.")
+    else:
+        print(f"Error updating README.md: {response.status_code}")
+        print(response.json())
+
+
+def log_commit(repo_name, branch, commit):
+    """Create a log entry for a given commit."""
+    log_entry = (
+        f"- **Repository**: [{repo_name}](https://github.com/{repo_name})\n"
+        f"  - **Branch**: {branch}\n"
+        f"  - **Commit Message**: {commit['commit']['message']}\n"
+        f"  - **Author**: {commit['commit']['author']['name']} ({commit['commit']['author']['email']})\n"
+        f"  - **Date**: {commit['commit']['author']['date']}\n"
+        f"  - **Commit URL**: {commit['html_url']}\n"
+    )
+    return log_entry
+
+
+def main():
+    """Main script to fetch commits and update the activity log."""
+    print("Fetching repositories...")
+    repos = get_repos()
+
+    all_logs = []
+    for repo in repos:
+        repo_name = repo["full_name"]
+        default_branch = repo.get("default_branch", "main")
+        print(f"Fetching latest commit for {repo_name}...")
+        latest_commit = get_latest_commit(repo_name, default_branch)
+
+        if latest_commit:
+            log_entry = log_commit(repo_name, default_branch, latest_commit)
+            all_logs.append(log_entry)
+
+    if all_logs:
+        print("Updating activity log...")
+        full_log_entry = "\n".join(all_logs)
+        update_readme(full_log_entry)
+    else:
+        print("No new commits found to log.")
+
+
 if __name__ == "__main__":
-    generate_log()
+    main()
