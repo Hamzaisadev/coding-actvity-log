@@ -4,7 +4,7 @@ import base64
 
 # Load environment variables (replace with your token if not using secrets)
 GITHUB_TOKEN = os.getenv("GH_TOKEN")  # GitHub Personal Access Token
-LOG_REPO = "your-username/activity-log"  # Replace with your central repo name (username/repo)
+LOG_REPO = "Hamzaisadev/coding-actvity-log"  # Replace with your central repo name (username/repo)
 LOG_BRANCH = "main"  # Branch of the log repo to update
 LOG_FILE = "README.md"  # The file to update in the log repo
 
