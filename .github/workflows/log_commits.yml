@@ -1,0 +1,36 @@
+name: Log Commit Activity to README
+
+on:
+  push:
+    branches:
+      - main # or the branch you're pushing to, e.g., 'main'
+
+jobs:
+  log_activity:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+
+      - name: Run log_commits.py
+        run: |
+          python log_commits.py
+
+      - name: Append commit details to README.md
+        run: |
+          echo "### Commit Log - $(date)" >> README.md
+          echo "- Commit Message: ${{ github.event.head_commit.message }}" >> README.md
+          echo "- Repository: ${{ github.repository }}" >> README.md
+          echo "- Total Coding Time: $(tail -n 1 activity_log.md)" >> README.md
+
+      - name: Commit and push the changes to README.md
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add README.md
+          git commit -m "Updated README with commit details"
+          git push origin main
+        env:
+          USERNAME: ${{secrets.USERNAME}}
+          TOKEN: ${{secrets.GH_TOKEN}}

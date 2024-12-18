@@ -6,6 +6,9 @@ import os
 GITHUB_USERNAME = os.getenv("USERNAME")
 GITHUB_TOKEN = os.getenv("TOKEN")
 
+# WakaTime API endpoint for fetching stats
+WAKATIME_API_URL = "https://wakatime.com/api/v1/users/current/stats"
+
 # Log file for storing commit history
 LOG_FILE = "activity_log.md"
 
@@ -31,11 +34,24 @@ def fetch_commits(repo_name):
         print(f"Error fetching commits for {repo_name}: {response.status_code}")
         return []
 
+# Fetch WakaTime stats
+def fetch_wakatime_stats():
+    response = requests.get(WAKATIME_API_URL, headers={"Authorization": f"Bearer {os.getenv('WAKATIME_API_KEY')}"})
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error fetching WakaTime stats: {response.status_code}")
+        return {}
+
 # Main function to log commits
 def generate_log():
     repositories = fetch_repositories()
     log_entries = []
     today = datetime.now().strftime("%Y-%m-%d")
+    
+    # Fetch WakaTime stats
+    wakatime_stats = fetch_wakatime_stats()
+    total_time = wakatime_stats.get("data", {}).get("grand_total", {}).get("text", "0 hours")
     
     # Process each repository
     for repo in repositories:
@@ -56,6 +72,7 @@ def generate_log():
     # Write logs to the file
     with open(LOG_FILE, "w") as log_file:
         log_file.write("\n".join(log_entries))
+        log_file.write(f"\n### Total Coding Time: {total_time}\n")
         print(f"Logs written to {LOG_FILE}")
 
 # Run the script
