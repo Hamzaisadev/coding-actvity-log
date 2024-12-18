@@ -17,7 +17,11 @@ jobs:
         run: |
           python log_commits.py
 
-      - name: Append commit details to README.md
+      - name: Fetch WakaTime Data
+        run: |
+          curl -s "https://wakatime.com/api/v1/users/current/summaries?api_key=${{ secrets.WAKATIME_API_KEY }}" -o wakatime_data.json
+
+      - name: Append commit details and WakaTime data to README.md
         run: |
           echo "### Commit Log - $(date)" >> README.md
           echo "- Commit Message: ${{ github.event.head_commit.message }}" >> README.md

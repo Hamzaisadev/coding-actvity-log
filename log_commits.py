@@ -17,30 +17,33 @@ GITHUB_API_URL = f"https://api.github.com/users/{GITHUB_USERNAME}/repos?type=pub
 
 # Fetch repositories
 def fetch_repositories():
+    print("Fetching repositories...")
     response = requests.get(GITHUB_API_URL, auth=(GITHUB_USERNAME, GITHUB_TOKEN))
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"Error fetching repositories: {response.status_code}")
+        print(f"Error fetching repositories: {response.status_code} - {response.text}")
         return []
 
 # Fetch commits for each repository
 def fetch_commits(repo_name):
+    print(f"Fetching commits for {repo_name}...")
     commits_url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{repo_name}/commits?per_page=100"  # Increased to 100
     response = requests.get(commits_url, auth=(GITHUB_USERNAME, GITHUB_TOKEN))
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"Error fetching commits for {repo_name}: {response.status_code}")
+        print(f"Error fetching commits for {repo_name}: {response.status_code} - {response.text}")
         return []
 
 # Fetch WakaTime stats
 def fetch_wakatime_stats():
+    print("Fetching WakaTime stats...")
     response = requests.get(WAKATIME_API_URL, headers={"Authorization": f"Bearer {os.getenv('WAKATIME_API_KEY')}"})
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"Error fetching WakaTime stats: {response.status_code}")
+        print(f"Error fetching WakaTime stats: {response.status_code} - {response.text}")
         return {}
 
 # Main function to log commits
