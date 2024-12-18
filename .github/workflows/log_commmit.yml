@@ -27,3 +27,6 @@ jobs:
           git add README.md
           git commit -m "Updated README with commit details"
           git push origin main
+           env:
+          USERNAME: ${{ secrets.USERNAME }}
+          TOKEN: ${{ secrets.TOKEN }}
